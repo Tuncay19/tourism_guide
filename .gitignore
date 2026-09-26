@@ -1,0 +1,17 @@
+# Backend (Python)
+backend/__pycache__/
+backend/**/__pycache__/
+backend/.env
+backend/venv/
+backend/.venv/
+*.pyc
+
+# Frontend (Node.js)
+frontend/node_modules/
+frontend/.env
+frontend/dist/
+frontend/build/
+
+# Ümumi
+.DS_Store
+*.log
