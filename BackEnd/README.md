@@ -1,39 +1,47 @@
-# Qarabağ Tur Platforması — Backend
+# Qarabağ Tur Platforması — Backend (Python / FastAPI)
 
-Fərdi tur planları, məkanlar və restoranlar üçün backend API.
+Bu, əvvəlki Node.js versiyasının **eyni verilənlər bazası strukturuna sahib** Python versiyasıdır.
 
 ## Texnologiyalar
-- Node.js + Express
-- PostgreSQL + Prisma ORM
-- JWT (email/şifrə girişi)
-- Passport.js (Google və Facebook OAuth)
+- FastAPI (web framework)
+- SQLAlchemy 2.0 (ORM)
+- PostgreSQL
+- Alembic (miqrasiyalar)
+- JWT — `python-jose` (email/şifrə girişi)
+- Authlib — Google və Facebook OAuth
+- Passlib + bcrypt — şifrə hashləmə
 
 ## Quraşdırma
 
-1. Asılılıqları yükləyin:
+1. Virtual mühit yaradın və aktivləşdirin:
    ```
-   npm install
+   python3 -m venv venv
+   source venv/bin/activate      # Windows: venv\Scripts\activate
    ```
 
-2. `.env.example` faylını `.env` adı ilə kopyalayın və dəyərləri doldurun:
+2. Asılılıqları yükləyin:
+   ```
+   pip install -r requirements.txt
+   ```
+
+3. `.env.example` faylını `.env` adı ilə kopyalayın və dəyərləri doldurun:
    ```
    cp .env.example .env
    ```
-   - `DATABASE_URL` — öz PostgreSQL bağlantınız
-   - `JWT_SECRET`, `SESSION_SECRET` — istənilən güclü təsadüfi mətn
-   - Google/Facebook üçün OAuth açarları (hələlik boş qala bilər, sonra doldurarsınız)
 
-3. Bazanı yaradın və Prisma miqrasiyasını işə salın:
+4. Alembic ilə ilk miqrasiyanı yaradın və işə salın:
    ```
-   npx prisma migrate dev --name init
+   alembic revision --autogenerate -m "init"
+   alembic upgrade head
    ```
-   Bu əmr `prisma/schema.prisma`-dakı bütün cədvəlləri (users, accounts, places, restaurants, reviews, favorites, tour_plans, tour_plan_items) real PostgreSQL bazasında yaradacaq.
+   Bu, `app/db/models.py`-dakı bütün cədvəlləri (users, accounts, categories, places, restaurants, reviews, favorites, tour_plans, tour_plan_items) real PostgreSQL bazanızda yaradacaq.
 
-4. Serveri işə salın:
+5. Serveri işə salın:
    ```
-   npm run dev
+   uvicorn app.main:app --reload --port 8000
    ```
-   API `http://localhost:5000` ünvanında işə düşəcək.
+   API `http://localhost:8000` ünvanında işə düşəcək.
+   İnteraktiv Swagger sənədləri: `http://localhost:8000/docs`
 
 ## Hazır endpoint-lər
 
@@ -47,21 +55,23 @@ Fərdi tur planları, məkanlar və restoranlar üçün backend API.
 | GET   | /api/auth/facebook            | Facebook girişini başladır        |
 | GET   | /api/auth/facebook/callback   | Facebook-dan geri dönüş           |
 
-OAuth girişindən sonra istifadəçi `CLIENT_URL/oauth-success?token=...` ünvanına yönləndirilir — frontend bu token-i tutub localStorage-a yazmalıdır.
+`/docs` səhifəsindən bütün endpoint-ləri birbaşa brauzerdə sınaya bilərsiniz (Postman-a ehtiyac olmadan).
 
-## Verilənlər bazası strukturu (qısa xülasə)
+## Verilənlər bazası strukturu
 
-- **User** — istifadəçi məlumatları + `interests`, `budgetLevel`, `travelStyle` (fərdi tur tövsiyəsi üçün)
+Eyni struktur, Node.js versiyası ilə tam üst-üstə düşür:
+
+- **User** — istifadəçi + `interests`, `budget_level`, `travel_style` (fərdi tövsiyə üçün)
 - **Account** — Google/Facebook hesablarının User-ə bağlanması
-- **Category** — məkan/restoran kateqoriyaları (Tarixi abidə, Təbiət, Muzey və s.)
-- **Place** — görməli yerlər (Şuşa, Ağdam, Xankəndi və s. üzrə)
+- **Category** — kateqoriyalar
+- **Place** — görməli yerlər
 - **Restaurant** — restoranlar
-- **Review** — istifadəçi rəyləri (Place və ya Restaurant üçün)
+- **Review** — rəylər
 - **Favorite** — seçilmişlər
-- **TourPlan** / **TourPlanItem** — istifadəçinin yaratdığı gün-gün tur planı
+- **TourPlan** / **TourPlanItem** — istifadəçinin tur planı
 
-## Növbəti addımlar (sonra əlavə edə bilərsiniz)
-- `/api/places`, `/api/restaurants` — CRUD endpoint-ləri
-- `/api/tour-plans` — istifadəçinin özü üçün tur planı yaratması
-- Tövsiyə alqoritmi: `interests` + `budgetLevel` + `travelStyle` əsasında məkan/restoran filtri
-- Admin panel üçün `requireAdmin` middleware-i istifadə edərək məkan/restoran əlavə etmə
+## Növbəti addımlar
+- `/api/places`, `/api/restaurants` üçün CRUD router-ləri
+- `/api/tour-plans` — istifadəçinin öz tur planını yaratması
+- Tövsiyə alqoritmi: `interests` + `budget_level` + `travel_style` əsasında filtr
+- `require_admin` dependency-si ilə admin-only endpoint-lər
