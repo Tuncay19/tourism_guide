@@ -1,0 +1,230 @@
+// ============================================================
+// Qarabağ Tur Platforması — Verilənlər Bazası Sxemi (Prisma)
+// PostgreSQL üçün nəzərdə tutulub
+// ============================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// -------------------------------
+// İSTİFADƏÇİLƏR VƏ AUTENTİFİKASİYA
+// -------------------------------
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum AuthProvider {
+  LOCAL
+  GOOGLE
+  FACEBOOK
+}
+
+model User {
+  id            String    @id @default(uuid())
+  email         String    @unique
+  password      String?   // LOCAL qeydiyyat üçün (bcrypt hash). OAuth istifadəçilərində boş qala bilər
+  fullName      String
+  avatarUrl     String?
+  role          Role      @default(USER)
+  isVerified    Boolean   @default(false)
+
+  // Şəxsi seçimlər — tur planlaşdırma alqoritmi üçün istifadə olunur
+  interests     String[]  @default([]) // məs: ["tarix", "təbiət", "qastronomiya", "fotoqrafiya"]
+  budgetLevel   String?   // "low" | "medium" | "high"
+  travelStyle   String?   // "solo" | "family" | "couple" | "group"
+
+  accounts      Account[]
+  reviews       Review[]
+  favorites     Favorite[]
+  tourPlans     TourPlan[]
+
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@map("users")
+}
+
+// Sosial giriş (Google/Facebook) hesablarını User-ə bağlamaq üçün
+model Account {
+  id                String       @id @default(uuid())
+  userId            String
+  user              User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  provider          AuthProvider
+  providerAccountId String       // Google/Facebook-dan gələn unikal ID
+  accessToken       String?
+  refreshToken      String?
+
+  createdAt         DateTime     @default(now())
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+// -------------------------------
+// MƏKANLAR (görməli yerlər, tarixi abidələr, təbiət və s.)
+// -------------------------------
+
+model Category {
+  id        String     @id @default(uuid())
+  name      String     @unique   // "Tarixi abidə", "Təbiət", "Muzey", "Restoran", "Otel"...
+  icon      String?
+
+  places      Place[]
+  restaurants Restaurant[]
+
+  @@map("categories")
+}
+
+model Place {
+  id            String     @id @default(uuid())
+  name          String
+  description   String
+  region        String     // məs: "Şuşa", "Xankəndi", "Ağdam", "Füzuli"
+  address       String?
+  latitude      Float?
+  longitude     Float?
+  images        String[]   @default([])
+
+  categoryId    String?
+  category      Category?  @relation(fields: [categoryId], references: [id])
+
+  avgRating     Float      @default(0)
+  reviewCount   Int        @default(0)
+
+  reviews       Review[]
+  favorites     Favorite[]
+  tourItems     TourPlanItem[]
+
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  @@map("places")
+}
+
+// -------------------------------
+// RESTORANLAR
+// -------------------------------
+
+model Restaurant {
+  id            String     @id @default(uuid())
+  name          String
+  description   String
+  region        String
+  address       String?
+  latitude      Float?
+  longitude     Float?
+  images        String[]   @default([])
+  cuisineType   String?    // "Azərbaycan", "Avropa", "Fast-food"...
+  priceRange    String?    // "$" | "$$" | "$$$"
+  openingHours  String?
+
+  categoryId    String?
+  category      Category?  @relation(fields: [categoryId], references: [id])
+
+  avgRating     Float      @default(0)
+  reviewCount   Int        @default(0)
+
+  reviews       Review[]
+  favorites     Favorite[]
+  tourItems     TourPlanItem[]
+
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  @@map("restaurants")
+}
+
+// -------------------------------
+// RƏYLƏR
+// -------------------------------
+
+model Review {
+  id           String      @id @default(uuid())
+  userId       String
+  user         User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  placeId      String?
+  place        Place?      @relation(fields: [placeId], references: [id], onDelete: Cascade)
+
+  restaurantId String?
+  restaurant   Restaurant? @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+
+  rating       Int         // 1-5
+  comment      String?
+
+  createdAt    DateTime    @default(now())
+
+  @@map("reviews")
+}
+
+// -------------------------------
+// FAVORİTLƏR
+// -------------------------------
+
+model Favorite {
+  id           String      @id @default(uuid())
+  userId       String
+  user         User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  placeId      String?
+  place        Place?      @relation(fields: [placeId], references: [id], onDelete: Cascade)
+
+  restaurantId String?
+  restaurant   Restaurant? @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+
+  createdAt    DateTime    @default(now())
+
+  @@unique([userId, placeId, restaurantId])
+  @@map("favorites")
+}
+
+// -------------------------------
+// FƏRDİ TUR PLANLARI
+// -------------------------------
+
+model TourPlan {
+  id          String         @id @default(uuid())
+  userId      String
+  user        User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  title       String
+  description String?
+  startDate   DateTime?
+  endDate     DateTime?
+  isPublic    Boolean        @default(false)
+
+  items       TourPlanItem[]
+
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  @@map("tour_plans")
+}
+
+model TourPlanItem {
+  id           String      @id @default(uuid())
+  tourPlanId   String
+  tourPlan     TourPlan    @relation(fields: [tourPlanId], references: [id], onDelete: Cascade)
+
+  placeId      String?
+  place        Place?      @relation(fields: [placeId], references: [id])
+
+  restaurantId String?
+  restaurant   Restaurant? @relation(fields: [restaurantId], references: [id])
+
+  dayNumber    Int         // Turun neçənci günü
+  orderIndex   Int         // O gün daxilində sıra
+  startTime    String?     // "10:00" kimi sərbəst mətn
+  notes        String?
+
+  @@map("tour_plan_items")
+}
