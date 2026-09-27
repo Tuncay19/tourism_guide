@@ -42,4 +42,16 @@ export async function getMeRequest(token) {
   return response.data; // user
 }
 
+// Email təsdiqləmə kodunu göndərmək
+export async function verifyEmailRequest(email, code) {
+  const response = await apiClient.post("/api/auth/verify-email", { email, code });
+  return response.data; // { message }
+}
+
+// Yeni təsdiqləmə kodu istəmək
+export async function resendCodeRequest(email) {
+  const response = await apiClient.post("/api/auth/resend-code", { email });
+  return response.data; // { message }
+}
+
 export default apiClient;

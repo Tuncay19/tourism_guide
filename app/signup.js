@@ -27,7 +27,8 @@ export default function SignupScreen() {
     setSubmitting(true);
     try {
       await signup(email, password, fullName);
-      router.replace("/home");
+      // Artıq Home-a yox, kod təsdiqləmə ekranına göndəririk
+      router.replace({ pathname: "/verify-email", params: { email } });
     } catch (err) {
       const message =
         err.response?.data?.detail || "Qeydiyyat uğursuz oldu. Yenidən cəhd edin.";
