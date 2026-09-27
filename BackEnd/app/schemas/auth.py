@@ -33,3 +33,16 @@ class TokenResponse(BaseModel):
     message: str
     token: str
     user: UserOut
+
+
+class VerifyEmailRequest(BaseModel):
+    email: EmailStr
+    code: str
+
+
+class ResendCodeRequest(BaseModel):
+    email: EmailStr
+
+
+class MessageResponse(BaseModel):
+    message: str

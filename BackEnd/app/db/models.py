@@ -45,6 +45,8 @@ class User(Base):
     avatar_url = Column(String, nullable=True)
     role = Column(Enum(RoleEnum), default=RoleEnum.USER, nullable=False)
     is_verified = Column(Boolean, default=False)
+    verification_code = Column(String, nullable=True)
+    verification_code_expires_at = Column(DateTime(timezone=True), nullable=True)
 
     # Şəxsi seçimlər — fərdi tur tövsiyəsi üçün
     interests = Column(ARRAY(String), default=list)  # məs: ["tarix", "təbiət", "qastronomiya"]
