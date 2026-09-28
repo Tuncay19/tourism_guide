@@ -109,5 +109,7 @@ def resend_code(payload: ResendCodeRequest, db: Session = Depends(get_db)):
     user.verification_code_expires_at = datetime.now(timezone.utc) + timedelta(minutes=CODE_VALID_MINUTES)
     db.commit()
 
-    send_verification_email(user.email, code)
+    sent = send_verification_email(user.email, code)
+    if not sent:
+        raise HTTPException(status_code=502, detail="Email göndərilə bilmədi. Bir az sonra yenidən cəhd edin.")
     return MessageResponse(message="Yeni kod göndərildi.")

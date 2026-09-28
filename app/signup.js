@@ -10,6 +10,7 @@ import {
 } from "react-native";
 import { useRouter, Link } from "expo-router";
 import { useAuth } from "../src/context/AuthContext";
+import GoogleButton from "../src/components/GoogleButton";
 
 export default function SignupScreen() {
   const router = useRouter();
@@ -73,6 +74,8 @@ export default function SignupScreen() {
           <Text style={styles.buttonText}>Qeydiyyatdan keç</Text>
         )}
       </TouchableOpacity>
+
+      <GoogleButton />
 
       <Link href="/login" style={styles.link}>
         Artıq hesabınız var? Giriş edin

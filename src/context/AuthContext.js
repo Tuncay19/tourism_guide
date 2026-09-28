@@ -48,6 +48,14 @@ export function AuthProvider({ children }) {
     setUser(data.user);
   }
 
+  // Google ilə girişdən gələn token ilə daxil olmaq üçün
+  async function loginWithToken(newToken) {
+    const currentUser = await getMeRequest(newToken);
+    await AsyncStorage.setItem("token", newToken);
+    setToken(newToken);
+    setUser(currentUser);
+  }
+
   async function logout() {
     await AsyncStorage.removeItem("token");
     setToken(null);
@@ -55,7 +63,7 @@ export function AuthProvider({ children }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, token, loading, login, signup, logout }}>
+    <AuthContext.Provider value={{ user, token, loading, login, signup, loginWithToken, logout }}>
       {children}
     </AuthContext.Provider>
   );

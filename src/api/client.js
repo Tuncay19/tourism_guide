@@ -4,7 +4,7 @@
 import axios from "axios";
 
 // DİQQƏT: bura öz Render linkinizi yazın (sonunda "/" OLMASIN)
-const API_URL = "https://tourism-guide-stsh.onrender.com";
+export const API_URL = "https://tourism-guide-stsh.onrender.com";
 
 const apiClient = axios.create({
   baseURL: API_URL,

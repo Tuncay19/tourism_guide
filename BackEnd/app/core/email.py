@@ -1,26 +1,19 @@
-import smtplib
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
+import httpx
 
 from app.core.config import settings
 
+BREVO_URL = "https://api.brevo.com/v3/smtp/email"
 
-def send_verification_email(to_email: str, code: str) -> None:
+
+def send_verification_email(to_email: str, code: str) -> bool:
     """
-    Təsdiqləmə kodunu email ilə göndərir.
-    SMTP tənzimlənməyibsə (inkişaf mərhələsində), kodu sadəcə konsola çap edir —
-    beləcə hələ email quraşdırmamış olsanız belə, kodu logs-dan görə bilərsiniz.
+    Təsdiqləmə kodunu Brevo HTTP API ilə göndərir (SMTP yox — Render pulsuz
+    planında SMTP portları bloklanıb). Uğurludursa True qaytarır.
+    API açarı təyin olunmayıbsa, kodu sadəcə loglara yazır (inkişaf üçün).
     """
-    if not settings.smtp_username or not settings.smtp_password:
+    if not settings.brevo_api_key or not settings.mail_sender_email:
         print(f"[DEV] {to_email} üçün təsdiqləmə kodu: {code}")
-        return
-
-    from_email = settings.smtp_from_email or settings.smtp_username
-
-    message = MIMEMultipart("alternative")
-    message["Subject"] = "Qarabağ Tur Platforması — Email təsdiqləmə kodu"
-    message["From"] = from_email
-    message["To"] = to_email
+        return False
 
     text_body = f"Salam!\n\nEmail təsdiqləmə kodunuz: {code}\n\nBu kod 15 dəqiqə ərzində etibarlıdır."
     html_body = f"""
@@ -32,10 +25,19 @@ def send_verification_email(to_email: str, code: str) -> None:
     </div>
     """
 
-    message.attach(MIMEText(text_body, "plain"))
-    message.attach(MIMEText(html_body, "html"))
+    payload = {
+        "sender": {"name": settings.mail_sender_name, "email": settings.mail_sender_email},
+        "to": [{"email": to_email}],
+        "subject": "AzTurizm Guide — Email təsdiqləmə kodu",
+        "htmlContent": html_body,
+        "textContent": text_body,
+    }
+    headers = {"api-key": settings.brevo_api_key, "accept": "application/json"}
 
-    with smtplib.SMTP(settings.smtp_host, settings.smtp_port) as server:
-        server.starttls()
-        server.login(settings.smtp_username, settings.smtp_password)
-        server.sendmail(from_email, to_email, message.as_string())
+    try:
+        response = httpx.post(BREVO_URL, json=payload, headers=headers, timeout=15)
+        response.raise_for_status()
+        return True
+    except Exception as exc:  # noqa: BLE001
+        print(f"[EMAIL ERROR] {to_email}: {exc}")
+        return False

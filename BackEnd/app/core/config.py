@@ -15,20 +15,15 @@ class Settings(BaseSettings):
     google_client_secret: str = ""
     google_redirect_uri: str = ""
 
-    facebook_client_id: str = ""
-    facebook_client_secret: str = ""
-    facebook_redirect_uri: str = ""
-
-    # Email göndərmə (təsdiqləmə kodu üçün) — Gmail SMTP nümunəsi
-    smtp_host: str = "smtp.gmail.com"
-    smtp_port: int = 587
-    smtp_username: str = ""
-    smtp_password: str = ""
-    smtp_from_email: str = ""
+    # Email göndərmə (Brevo HTTP API) — Render pulsuz planı SMTP-ni bloklayır
+    brevo_api_key: str = ""
+    mail_sender_email: str = ""
+    mail_sender_name: str = "AzTurizm Guide"
 
     class Config:
         env_file = ".env"
         case_sensitive = False
+        extra = "ignore"
 
 
 settings = Settings()

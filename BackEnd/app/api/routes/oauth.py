@@ -11,11 +11,19 @@ from app.oauth.utils import find_or_create_oauth_user
 
 router = APIRouter(prefix="/api/auth", tags=["oauth"])
 
+# Token yalnız bizim app-ın açıla biləcəyi ünvanlara göndərilir (təhlükəsizlik üçün).
+# exp:// — Expo Go, azturizm:// — hazır (build olunmuş) app
+ALLOWED_APP_REDIRECT_PREFIXES = ("exp://", "exps://", "azturizm://")
 
-# ---- Google ----
 
 @router.get("/google")
-async def google_login(request: Request):
+async def google_login(request: Request, app_redirect: str | None = None):
+    # Mobil app hansı ünvana qayıtmaq istədiyini bildirir; yoxlayıb session-da saxlayırıq
+    if app_redirect and app_redirect.startswith(ALLOWED_APP_REDIRECT_PREFIXES):
+        request.session["app_redirect"] = app_redirect
+    else:
+        request.session.pop("app_redirect", None)
+
     return await oauth.google.authorize_redirect(request, settings.google_redirect_uri)
 
 
@@ -34,30 +42,7 @@ async def google_callback(request: Request, db: Session = Depends(get_db)):
     )
 
     jwt_token = create_access_token({"sub": user.id})
-    return RedirectResponse(f"{settings.client_url}/oauth-success?token={jwt_token}")
 
-
-# ---- Facebook ----
-
-@router.get("/facebook")
-async def facebook_login(request: Request):
-    return await oauth.facebook.authorize_redirect(request, settings.facebook_redirect_uri)
-
-
-@router.get("/facebook/callback")
-async def facebook_callback(request: Request, db: Session = Depends(get_db)):
-    token = await oauth.facebook.authorize_access_token(request)
-    resp = await oauth.facebook.get("me?fields=id,name,email,picture", token=token)
-    profile = resp.json()
-
-    user = find_or_create_oauth_user(
-        db,
-        provider=AuthProviderEnum.FACEBOOK,
-        provider_account_id=profile["id"],
-        email=profile.get("email"),
-        full_name=profile.get("name"),
-        avatar_url=profile.get("picture", {}).get("data", {}).get("url"),
-    )
-
-    jwt_token = create_access_token({"sub": user.id})
-    return RedirectResponse(f"{settings.client_url}/oauth-success?token={jwt_token}")
+    base = request.session.pop("app_redirect", None) or f"{settings.client_url}/oauth-success"
+    separator = "&" if "?" in base else "?"
+    return RedirectResponse(f"{base}{separator}token={jwt_token}")
