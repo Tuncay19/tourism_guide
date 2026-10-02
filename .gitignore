@@ -1,0 +1,17 @@
+# Frontend (Node / Expo)
+node_modules/
+.expo/
+dist/
+web-build/
+*.log
+
+# Backend (Python)
+BackEnd/__pycache__/
+BackEnd/**/__pycache__/
+BackEnd/.env
+BackEnd/venv/
+BackEnd/.venv/
+*.pyc
+
+# Ümumi
+.DS_Store
